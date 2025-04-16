@@ -101,6 +101,7 @@ const rl = readlinePromises.createInterface({
 
 (async (req, res) => {
     //scrapping
+    let linkks = []
 
     const imap = new Imap({
         user: 'scrap2025scrap@gmail.com',
@@ -164,17 +165,16 @@ const rl = readlinePromises.createInterface({
                                 if (parsed.text || parsed.html) {
                                     const textToSearch = parsed.text || parsed.html;
                                     const linkss = extractLinks(textToSearch);
-                                    let links = []
 
                                     for(let link of linkss){
                                         if(link.includes('https://www.idealista.com/inmueble/')){
-                                            links.push(link)
+                                            linkks.push(link)
                                         }
                                     }
                                     
-                                    if (links.length > 0) {
+                                    if (linkks.length > 0) {
                                         console.log('\n🔗 Enlaces encontrados:');
-                                        links.forEach((link, i) => console.log(`${i + 1}. ${link}`));
+                                        linkks.forEach((link, i) => console.log(`${i + 1}. ${link}`));
                                     } else {
                                         console.log('No se encontraron enlaces.');
                                     }
@@ -613,7 +613,7 @@ for(let linkMaps of valoresColumnaC){
                         let next = document.querySelector('a.icon-arrow-right-after');
                         if( next ){
                             return {
-                                exists : true,
+                                exists : false,
                                 link : next.href
                             };
                         }else{
@@ -887,10 +887,11 @@ HabAll.forEach(hab => {
             try {
                 let url = listLink;
                 const Hrefs = [];
-        
+                Hrefs.push(...linkks)
+                let count = 0;
                 try {
+                    /*
                     let statuss
-                    let count = 0;
                     
                     let browser1 = await puppeteer.launch({
                         headless: true,
@@ -988,7 +989,7 @@ HabAll.forEach(hab => {
         
                     await page1.close();
                     await browser1.close();
-        
+        */
                                         
                 let browser = await puppeteer.launch({
                     headless: true,
@@ -1216,9 +1217,11 @@ HabAll.forEach(hab => {
                             });
         
         
-                                const parts = href.split("/");
-                                const numero = parts[parts.length - 2];
-        
+                            const parts = href.split("inmueble/");
+                            const parts2 = parts[1].split("/");
+                            const numero = parts2[0];
+                            console.log('numero', numero)
+    
                             let responsee = await page.goto(`https://www.idealista.com/ajax/detailController/staticMapUrl.ajax?adId=${numero}&width=646&height=330#`,{waitUntil: 'domcontentloaded',timeout:0});
                             rStatus = responsee.status();
                             let cords = await page.evaluate(()=>{
@@ -1503,8 +1506,10 @@ HabAll.forEach(hab => {
                             });
         
         
-                                const parts = href.split("/");
-                                const numero = parts[parts.length - 2];
+                                const parts = href.split("inmueble/");
+                                const parts2 = parts[1].split("/");
+                                const numero = parts2[0];
+                                console.log('numero', numero);
         
                             let responsee = await page.goto(`https://www.idealista.com/ajax/detailController/staticMapUrl.ajax?adId=${numero}&width=646&height=330#`,{waitUntil: 'domcontentloaded',timeout:0});
                             rStatus = responsee.status();

@@ -6,10 +6,10 @@ const fs = require('fs');
 const nodemailer = require('nodemailer');
 
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    service: 'Gmail',
     auth: {
       user: 'julianrafael1604@gmail.com',
-      pass: 'mcgi mkup dxys if'
+      pass: 'eykd gsal khrh vavp'
     }
   });
 
@@ -149,7 +149,6 @@ async function tuFuncion() {
             console.log('--------------------------------');       
             console.log('--------------------------------');       
             console.log('--------------------------------');       
-            console.log('espere a que la conexion IMAP se cierre para ingresar el radio de busqueda');       
             console.log('--------------------------------');       
             console.log('--------------------------------');       
             console.log('--------------------------------');       
@@ -163,14 +162,14 @@ async function tuFuncion() {
                 zoom = 14;
             } else if (radioo >= 2001 && radioo <= 3000) {
                 zoom = 13;
-            } else if (radioo >= 3001 && radioo <= 5000) {
+            } else if (radioo >= 3001 && radioo <= 500000) {
                 zoom = 12;
             }
 
-            if(radioo < 200 || radioo > 5000){
+            if(radioo < 200 || radioo > 500000){
                 console.log('El radioo debe estar entre 200 y 5000 metros');
             }
-        }while(radioo < 200 || radioo > 5000)
+        }while(radioo < 200 || radioo > 500000)
 
     } catch (err) {
         console.error('Error:', err);
@@ -245,9 +244,20 @@ console.log('-------------------');
 let allRoundInfo = [] 
 let countLink = 0
 for(let linkMaps of valoresColumnaC){
-
+linkks = []
 //-----------------------------------------------------------------------
+function esperarConexionIMAP(imap) {
+    return new Promise((resolve, reject) => {
+        imap.once('ready', () => {
+            console.log('Conexión IMAP lista');
+            resolve(); // <-- aquí liberamos la ejecución
+        });
 
+        imap.once('error', (err) => {
+            reject(err);
+        });
+    });
+}
 
 const imap = new Imap({
         user: 'scrap2025scrap@gmail.com',
@@ -260,10 +270,13 @@ const imap = new Imap({
     // Configuración de filtros
     const senderEmail = 'noresponder@idealista.com'; // Reemplaza con el correo del remitente
     const daysAgo = 1; // Rango de búsqueda en horas
+    imap.once('error', (err) => console.error('Error en la conexión IMAP:', err));
+    imap.once('end', () => console.log('Conexión IMAP cerrada.'));
     
-    imap.once('ready', () => {
-        console.log('Conexión IMAP lista');
-        imap.openBox('INBOX', true, (err, box) => {
+    await imap.connect(); // 🚀 Iniciar conexión
+    
+    await esperarConexionIMAP(imap); // 🔒 Esperar a que esté lista (solo UNA VEZ aquí)
+    imap.openBox('INBOX', true, (err, box) => {
             if (err) throw err;
     
             console.log(`Bandeja de entrada abierta (${box.messages.total} mensajes)`);
@@ -321,7 +334,22 @@ const imap = new Imap({
 
                                     for(let link of linkss){
                                         if(link.includes('https://www.idealista.com/inmueble/')){
-                                            linkks.push(link)
+                                            let cutLink = link.split('?utm_medium=email')
+                                            let cleanLink = cutLink[0]
+                                            if(linkks.includes(cleanLink)){
+                                                console.log('Link repetido')
+                                            }else{
+                                                linkks.push(cleanLink)
+                                                console.log('link añadido')
+
+                                                console.log('---------------------------------')
+                                                console.log('---------------------------------')
+                                                console.log('---------------------------------')
+                                                console.log('links listados',linkks)
+                                                console.log('---------------------------------')
+                                                console.log('---------------------------------')
+                                                console.log('---------------------------------')
+                                            }
                                         }
                                     }
                                     
@@ -333,11 +361,9 @@ const imap = new Imap({
                                     }
                                 }
                             }else{
-                                console.log(`📅 Fecha: ${parsed.date}`);
-                                console.log(parsed.subject);
+                                //console.log(`📅 Fecha: ${parsed.date}`);
+                                //console.log(parsed.subject);
                                 console.log(`--------------`);
-                                console.log(`link no valido`);
-                                console.log(`link no valido`);
                                 console.log(`link no valido`);
                                 console.log(`--------------`);
                             }
@@ -362,7 +388,7 @@ const imap = new Imap({
                 });
             });
         });
-    });
+    
     
     // Función para extraer enlaces usando expresiones regulares
     function extractLinks(text) {
@@ -380,9 +406,8 @@ const imap = new Imap({
         console.log('Conexión IMAP cerrada.');
     });
     
-    await imap.connect();
 //------------------------------------------------------------------------https://www.google.com/maps?q=28.0701,-15.4557
-  
+
 await tuFuncion();
 
     countLink ++
@@ -1279,8 +1304,55 @@ HabAll.forEach(hab => {
                             const parts2 = parts[1].split("/");
                             const numero = parts2[0];
                             console.log('numero', numero)
+
+
+                            const maxRetriess = 3;
+                            let retriess = 0;
+                            let responsee;
+
+                            while (retriess < maxRetriess) {
+                            try {
+                                await delay(50)   // Wait a bit due to race 
+                                responsee = await page.goto(`https://www.idealista.com/ajax/detailController/staticMapUrl.ajax?adId=${numero}&width=646&height=330#`,{waitUntil: 'domcontentloaded',timeout:0});
+                                console.log('Navigation successful');
+                                break; // Exit the loop if navigation is successful
+                            } catch (error) {
+                                if (error.message.includes('net::ERR_CONNECTION_RESET')) {
+                                console.error(`Retry ${retriess + 1}: Error - ${error.message}`);
+                                retriess++;
+                            } else if (error.message.includes('net::ERR_TIMED_OUT')) {
+                                console.error(`Retry ${retriess + 1}: Timeout Error - ${error.message}`);
+                                retriess++;
+                            } else if (error.message.includes('net::ERR_CONNECTION_CLOSED')) {
+                                console.error(`Retry ${retriess + 1}: Timeout Error - ${error.message}`);
+                                retriess++;
+                            } else if (error.message.includes('Navigating frame was detached')) {
+                                    console.error(`Retry ${retriess + 1}: Frame Detached Error - ${error.message}`);
+                                    retriess++;
+                                } else if (error.message.includes('net::ERR_PROXY_CONNECTION_FAILED')) {
+                                    console.error(`Retry ${retriess + 1}: Timeout Error - ${error.message}`);
+                                    retriess++;
+                                }
+                             else if (error.message.includes('net:')) {
+                                console.error(`Retry ${retriess + 1}: Timeout Error - ${error.message}`);
+                                retriess++;
+                            } else if (error.message.includes('net::ERR_CERT_AUTHORITY_INVALID')) {
+                                    console.error(`Retry ${retriess + 1}: Timeout Error - ${error.message}`);
+                                    retriess++;
+                                } else {
+                                console.error(`Unexpected error: ${error.message}`);
+                                throw error; // Re-throw unexpected errors
+                                }
+                            }
+                            }
+
+                            if (retriess === maxRetriess) {
+                            console.error('Failed to navigate after maximum retry attempts');
+                            // Optionally handle the error gracefully to continue the execution
+                            }
+
+
     
-                            let responsee = await page.goto(`https://www.idealista.com/ajax/detailController/staticMapUrl.ajax?adId=${numero}&width=646&height=330#`,{waitUntil: 'domcontentloaded',timeout:0});
                             rStatus = responsee.status();
                             let cords = await page.evaluate(()=>{
                                 let rawCords= document.querySelector('pre') ? document.querySelector('pre').innerText : 'N/A';  

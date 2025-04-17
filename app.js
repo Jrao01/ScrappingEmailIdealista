@@ -3,12 +3,31 @@ const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 const XLSX = require('xlsx');
 const path = require('path');
 const fs = require('fs');
+const nodemailer = require('nodemailer');
 
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: 'julianrafael1604@gmail.com',
+      pass: 'mcgi mkup dxys if'
+    }
+  });
+
+const mailOptions = {
+    from: 'julianrafael1604@gmail.com', 
+    to: 'scrap2025scrap@gmail.com', 
+    subject: 'Reporte de datos recolectados de Habiaciones y viviendas en Idealista',
+    text: 'Este es el archivo excel que contiene el reporte de todos los datos recolectados y rentabilidades calculadas', 
+    attachments:[
+        {
+        filename: 'datos.xlsx',
+        path :'./datos.xlsx'
+        }
+    ]
+};
 
 const Imap = require('node-imap');
 const { simpleParser } = require('mailparser');
-
-const {inspect} = require('util');
 
 puppeteer.use(StealthPlugin());
 
@@ -84,7 +103,7 @@ function calcularPromedioTiempo(tiempos) {
       // Si la longitud es impar, la mediana es el elemento central
       mediana = diasTranscurridos[mitad];
     }
-  
+
     if (mediana === 0) {
       return "Hoy";
     } else {
@@ -101,9 +120,136 @@ const rl = readlinePromises.createInterface({
 
 (async (req, res) => {
     //scrapping
-    let linkks = []
+    let linkks = [];
+    
+    let celda
+    let entidad
+    let ciudad
+    let nestudent
+    let TipoEnt
+    let agr
+    let coords
+    let Promediotiempo
+    let CosteMedio
 
-    const imap = new Imap({
+    const allInfo = [];
+    let timeer = 0
+    let dataHab = {}
+    let proxyURL = 'gw.dataimpulse.com:823';
+    let password = '67e4b118d2a4651a';
+    let username = '10461ca1d2a9c33bcb99';
+    let radioo
+    let radio = 0
+    let zoom
+        
+async function tuFuncion() {
+    if(radio == 0){
+    try {
+        do{     
+            console.log('--------------------------------');       
+            console.log('--------------------------------');       
+            console.log('--------------------------------');       
+            console.log('espere a que la conexion IMAP se cierre para ingresar el radio de busqueda');       
+            console.log('--------------------------------');       
+            console.log('--------------------------------');       
+            console.log('--------------------------------');       
+            radioo = await rl.question('Ingresa el radio de busqueda: ');
+            radio = parseInt(radioo)
+            console.log(`El tamaño del Radio ingresado es: ${radio}`);
+
+            if (radioo <= 1000) {
+                zoom = 15;
+            } else if (radioo >= 1001 && radioo <= 2000) {
+                zoom = 14;
+            } else if (radioo >= 2001 && radioo <= 3000) {
+                zoom = 13;
+            } else if (radioo >= 3001 && radioo <= 5000) {
+                zoom = 12;
+            }
+
+            if(radioo < 200 || radioo > 5000){
+                console.log('El radioo debe estar entre 200 y 5000 metros');
+            }
+        }while(radioo < 200 || radioo > 5000)
+
+    } catch (err) {
+        console.error('Error:', err);
+    } finally {
+        rl.close();
+    }
+}else{
+    console.log('el radio de busqueda ya fue ingresado y es: ',radio)
+}
+}
+    setInterval(() => {
+        timeer = timeer + .5
+    }, 500);
+
+    let MotherCoords
+    let Link
+    let listLink
+
+    try{
+
+        const XLSX = require('xlsx');
+
+const workbook = XLSX.readFile('./input/input.xlsx'); 
+const sheetName = workbook.SheetNames[0];
+const sheet = workbook.Sheets[sheetName];
+
+const valoresColumnaC = []; // Array para guardar los valores
+
+// Obtener el rango de la hoja de cálculo
+const range = XLSX.utils.decode_range(sheet['!ref']);
+// Iterar a través de las filas de la columna C
+for (let fila = range.s.r; ; fila++) { // Bucle infinito hasta encontrar una celda vacía
+     let direccionCelda = 'C' + (fila + 2); 
+     let Entidad = 'A' + (fila + 2); 
+     let Ciudad = 'B' + (fila + 2); 
+     let NEstudaintesAprox = 'D' + (fila + 2); 
+     let TipoEntidad = 'E' + (fila + 2); 
+     let Agrupacion = 'F' + (fila + 2); 
+     let CCAA = 'G' + (fila + 2); 
+    celda = sheet[direccionCelda];
+    entidad = sheet[Entidad];
+    ciudad = sheet[Ciudad];
+    nestudent = sheet[NEstudaintesAprox];
+    TipoEnt = sheet[TipoEntidad];
+    agr = sheet[Agrupacion];
+    CCAA = sheet[CCAA];
+    
+    if (celda && celda.v && CCAA != 'por revisar' && CCAA != 'Por revisar') {
+        let objetoInfo = {
+            link : celda.v,
+            entidad  : entidad.v ,
+            ciudad : ciudad.v,
+            nestudent :nestudent.v ,
+            TipoEnt : TipoEnt.v,
+            agr : agr.v,
+            CCAA : CCAA.v,
+        }        // Si la celda existe y tiene un valor, lo agregamos al array
+        valoresColumnaC.push(objetoInfo);
+    } else if(CCAA === 'por revisar' && CCAA === 'Por revisar' ){
+        continue
+    }else{
+        // Si la celda está vacía, terminamos el bucle
+        break;
+    }
+}
+
+console.log(valoresColumnaC, '-------'); 
+console.log('-------------------'); 
+console.log(valoresColumnaC.length); 
+console.log(valoresColumnaC.length); 
+console.log('-------------------'); 
+let allRoundInfo = [] 
+let countLink = 0
+for(let linkMaps of valoresColumnaC){
+
+//-----------------------------------------------------------------------
+
+
+const imap = new Imap({
         user: 'scrap2025scrap@gmail.com',
         password: 'izlnoodgdvynzukv',
         host: 'imap.gmail.com',
@@ -113,7 +259,7 @@ const rl = readlinePromises.createInterface({
     
     // Configuración de filtros
     const senderEmail = 'noresponder@idealista.com'; // Reemplaza con el correo del remitente
-    const hoursAgo = 24; // Rango de búsqueda en horas
+    const daysAgo = 1; // Rango de búsqueda en horas
     
     imap.once('ready', () => {
         console.log('Conexión IMAP lista');
@@ -123,12 +269,14 @@ const rl = readlinePromises.createInterface({
             console.log(`Bandeja de entrada abierta (${box.messages.total} mensajes)`);
             
             const searchDate = new Date();
-            searchDate.setHours(searchDate.getHours() - hoursAgo);
-    
+            searchDate.setDate(searchDate.getDate() - daysAgo);
+            //searchDate.setHours(0,0,0,0);
+            console.log(`Buscando correos desde: ${searchDate}`);
+            console.log(`Buscando correos desde: ${searchDate.toISOString().split('T')[0]}`);
             // Buscar correos filtrados
             imap.search([
                 ['FROM', senderEmail],
-                ['SINCE', searchDate.toISOString().split('T')[0]]
+                ['SINCE', searchDate.toISOString()]
             ], async (err, results) => {
                 if (err) throw err;
     
@@ -156,7 +304,12 @@ const rl = readlinePromises.createInterface({
                             try {
                                 // Parsear el correo con mailparser
                                 const parsed = await simpleParser(buffer);
-                                if(parsed.subject.includes('Asturias') || parsed.subject.includes('barcelona')){
+
+                                let sector = parsed.subject.toLocaleLowerCase();
+                                let ccaa = linkMaps.CCAA.toLocaleLowerCase();
+                                if(sector.includes(ccaa) && searchDate < parsed.date ){
+
+
                                 console.log('\n════════════════════════════════════');
                                 console.log(`📧 De: ${parsed.from?.text} | Asunto: ${parsed.subject}`);
                                 console.log(`📅 Fecha: ${parsed.date}`);
@@ -180,7 +333,13 @@ const rl = readlinePromises.createInterface({
                                     }
                                 }
                             }else{
+                                console.log(`📅 Fecha: ${parsed.date}`);
                                 console.log(parsed.subject);
+                                console.log(`--------------`);
+                                console.log(`link no valido`);
+                                console.log(`link no valido`);
+                                console.log(`link no valido`);
+                                console.log(`--------------`);
                             }
                             } catch (error) {
                                 console.error('Error al parsear el correo:', error);
@@ -221,123 +380,22 @@ const rl = readlinePromises.createInterface({
         console.log('Conexión IMAP cerrada.');
     });
     
-    imap.connect();
-    
-    let celda
-    let entidad
-    let ciudad
-    let nestudent
-    let TipoEnt
-    let agr
-    let coords
-    let Promediotiempo
-    let CosteMedio
-
-    const allInfo = [];
-    let timeer = 0
-    let dataHab = {}
-    let proxyURL = 'gw.dataimpulse.com:823';
-    let password = '67e4b118d2a4651a';
-    let username = '10461ca1d2a9c33bcb99';
-    let radioo
-    let radio
-    let zoom
-        
-async function tuFuncion() {
-    try {
-        do{            
-            radioo = await rl.question('Ingresa el radio de busqueda: ');
-            radio = parseInt(radioo)
-            console.log(`El tamaño del Radio ingresado es: ${radio}`);
-
-            if (radioo <= 1000) {
-                zoom = 15;
-            } else if (radioo >= 1001 && radioo <= 2000) {
-                zoom = 14;
-            } else if (radioo >= 2001 && radioo <= 3000) {
-                zoom = 13;
-            } else if (radioo >= 3001 && radioo <= 5000) {
-                zoom = 12;
-            }
-
-            if(radioo < 200 || radioo > 5000){
-                console.log('El radioo debe estar entre 200 y 5000 metros');
-            }
-        }while(radioo < 200 || radioo > 5000)
-
-    } catch (err) {
-        console.error('Error:', err);
-    } finally {
-        rl.close();
-    }
-}
+    await imap.connect();
+//------------------------------------------------------------------------https://www.google.com/maps?q=28.0701,-15.4557
   
-    await tuFuncion();
+await tuFuncion();
 
-    setInterval(() => {
-        timeer = timeer + .5
-    }, 500);
-
-    let MotherCoords
-    let Link
-    let listLink
-
-    try{
-
-
-        const XLSX = require('xlsx');
-
-const workbook = XLSX.readFile('./input/input.xlsx'); // Reemplaza 'tu-archivo.xlsx'
-const sheetName = workbook.SheetNames[0];
-const sheet = workbook.Sheets[sheetName];
-
-const valoresColumnaC = []; // Array para guardar los valores
-
-// Obtener el rango de la hoja de cálculo
-const range = XLSX.utils.decode_range(sheet['!ref']);
-
-// Iterar a través de las filas de la columna C
-for (let fila = range.s.r; ; fila++) { // Bucle infinito hasta encontrar una celda vacía
-     let direccionCelda = 'C' + (fila + 2); // C1, C2, C3, ... (filas en Excel empiezan en 1)
-     let Entidad = 'A' + (fila + 2); // C1, C2, C3, ... (filas en Excel empiezan en 1)
-     let Ciudad = 'B' + (fila + 2); // C1, C2, C3, ... (filas en Excel empiezan en 1)
-     let NEstudaintesAprox = 'D' + (fila + 2); // C1, C2, C3, ... (filas en Excel empiezan en 1)
-     let TipoEntidad = 'E' + (fila + 2); // C1, C2, C3, ... (filas en Excel empiezan en 1)
-     let Agrupacion = 'F' + (fila + 2); // C1, C2, C3, ... (filas en Excel empiezan en 1)
-    celda = sheet[direccionCelda];
-    entidad = sheet[Entidad];
-    ciudad = sheet[Ciudad];
-    nestudent = sheet[NEstudaintesAprox];
-    TipoEnt = sheet[TipoEntidad];
-    agr = sheet[Agrupacion];
-
-    if (celda && celda.v) {
-        let objetoInfo = {
-            link : celda.v,
-            entidad  : entidad.v ,
-            ciudad : ciudad.v,
-            nestudent :nestudent.v ,
-            TipoEnt : TipoEnt.v,
-            agr : agr.v,
-        }        // Si la celda existe y tiene un valor, lo agregamos al array
-        valoresColumnaC.push(objetoInfo);
-    } else {
-        // Si la celda está vacía, terminamos el bucle
-        break;
-    }
-}
-
-console.log(valoresColumnaC, '-------'); // Mostrar los valores de la columna C
-let allRoundInfo = [] 
-for(let linkMaps of valoresColumnaC){
+    countLink ++
     allRoundInfo = [] 
     let HabAll = [];
     let solodate = [];
     let habArray = [];
     let enradio = 0;
     let linkk = linkMaps.link;
-    MotherCoords = linkk.split('place/')[1];
+    MotherCoords = linkk.split('q=')[1];
+    console.log('--------------------------------');
     console.log(MotherCoords,'--------');
+    console.log('--------------------------------');
     let doneCoords = MotherCoords.replace(',','/');
     Link = `https://www.idealista.com/point/venta-viviendas/${doneCoords}/${zoom}/mapa-google`; 
 
@@ -1643,13 +1701,23 @@ agr
         const dateTimeString = `${year}-${month}-${day}_${hours}-${minutes}-${seconds}`;
         
         // Crear el nombre del archivo con la fecha y hora
-        const filename = `datos_${dateTimeString}.xlsx`;
+        const filename = `datos.xlsx`;
         
         // Escribir el libro de trabajo en el archivo Excel con el nombre generado
         XLSX.writeFile(workbook, filename);
         
         console.log(`Archivo Excel creado con éxito: ${filename}`);
-        
+        if(countLink === valoresColumnaC.length ){
+
+            transporter.sendMail(mailOptions, (error, info) => {
+                if (error) {
+                    console.log('Error al enviar el correo:', error);
+                } else {
+                    console.log('Correo electrónico enviado:', info.response);
+                }
+            });
+            
+        }
         //----------------------------------------------------------//
          // Enviar la respuesta una vez que se completa el scraping
                 } catch (error) {

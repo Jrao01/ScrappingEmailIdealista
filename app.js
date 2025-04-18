@@ -152,7 +152,7 @@ async function tuFuncion() {
             console.log('--------------------------------');       
             console.log('--------------------------------');       
             console.log('--------------------------------');       
-            radioo = await rl.question('Ingresa el radio de busqueda: ');
+            radioo = 2000;
             radio = parseInt(radioo)
             console.log(`El tamaño del Radio ingresado es: ${radio}`);
 
@@ -209,6 +209,7 @@ for (let fila = range.s.r; ; fila++) { // Bucle infinito hasta encontrar una cel
      let TipoEntidad = 'E' + (fila + 2); 
      let Agrupacion = 'F' + (fila + 2); 
      let CCAA = 'G' + (fila + 2); 
+     let rradio = 'H' + (fila + 2);
     celda = sheet[direccionCelda];
     entidad = sheet[Entidad];
     ciudad = sheet[Ciudad];
@@ -216,6 +217,7 @@ for (let fila = range.s.r; ; fila++) { // Bucle infinito hasta encontrar una cel
     TipoEnt = sheet[TipoEntidad];
     agr = sheet[Agrupacion];
     CCAA = sheet[CCAA];
+    rradio = sheet[rradio]
     
     if (celda && celda.v && CCAA != 'por revisar' && CCAA != 'Por revisar') {
         let objetoInfo = {
@@ -226,6 +228,7 @@ for (let fila = range.s.r; ; fila++) { // Bucle infinito hasta encontrar una cel
             TipoEnt : TipoEnt.v,
             agr : agr.v,
             CCAA : CCAA.v,
+            rradio : rradio.v
         }        // Si la celda existe y tiene un valor, lo agregamos al array
         valoresColumnaC.push(objetoInfo);
     } else if(CCAA === 'por revisar' && CCAA === 'Por revisar' ){
@@ -258,7 +261,14 @@ function esperarConexionIMAP(imap) {
         });
     });
 }
-
+async function tuFuncion(imap) {
+    return new Promise(resolve => {
+      imap.once('end', () => {
+        console.log('Conexión IMAP cerrada. (barrera tuFuncion)');
+        resolve();
+      });
+    });
+  }
 const imap = new Imap({
         user: 'scrap2025scrap@gmail.com',
         password: 'izlnoodgdvynzukv',
@@ -270,8 +280,7 @@ const imap = new Imap({
     // Configuración de filtros
     const senderEmail = 'noresponder@idealista.com'; // Reemplaza con el correo del remitente
     const daysAgo = 1; // Rango de búsqueda en horas
-    imap.once('error', (err) => console.error('Error en la conexión IMAP:', err));
-    imap.once('end', () => console.log('Conexión IMAP cerrada.'));
+
     
     await imap.connect(); // 🚀 Iniciar conexión
     
@@ -320,6 +329,8 @@ const imap = new Imap({
 
                                 let sector = parsed.subject.toLocaleLowerCase();
                                 let ccaa = linkMaps.CCAA.toLocaleLowerCase();
+                                console.log('sector',sector);
+                                console.log('ccaa',ccaa);
                                 if(sector.includes(ccaa) && searchDate < parsed.date ){
 
 
@@ -402,14 +413,27 @@ const imap = new Imap({
         console.error('Error en la conexión IMAP:', err);
     });
     
-    imap.once('end', () => {
-        console.log('Conexión IMAP cerrada.');
-    });
+    await tuFuncion(imap); 
     
-//------------------------------------------------------------------------https://www.google.com/maps?q=28.0701,-15.4557
 
-await tuFuncion();
+// await tuFuncion();
 
+
+    radioo = linkMaps.rradio;
+    radio = parseInt(radioo)
+    if (radioo <= 1000) {
+        zoom = 15;
+    } else if (radioo >= 1001 && radioo <= 2000) {
+        zoom = 14;
+    } else if (radioo >= 2001 && radioo <= 3000) {
+        zoom = 13;
+    } else if (radioo >= 3001 && radioo <= 500000) {
+        zoom = 12;
+    }
+
+    if(radioo < 200 || radioo > 500000){
+        console.log('El radioo debe estar entre 200 y 5000 metros');
+    }
     countLink ++
     allRoundInfo = [] 
     let HabAll = [];
@@ -696,7 +720,7 @@ await tuFuncion();
                         let next = document.querySelector('a.icon-arrow-right-after');
                         if( next ){
                             return {
-                                exists : false,
+                                exists : true,
                                 link : next.href
                             };
                         }else{
